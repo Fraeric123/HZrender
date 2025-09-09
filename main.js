@@ -1,92 +1,39 @@
-const { Color3, Screen } = hzrender;
+const { Color3, Camera2D, Screen, Scene2D, print, Sprite2D, Vector2D, Texture2D, Animation2D, loadKeyframesFromTilemap, Camera2DController} = hzrender;
 
 let screen = new Screen();
+let scene_main = new Scene2D();
+screen.add_scene(scene_main);
 
-let textSpace = [""];        // každý řádek jako string
-let cursor = {ch: "_", r: 0, l: 0};   // r = řádek, l = pozice v řádku
-let txt = "";                 // text pro jednoduché renderování
+let dogImage = new Image();
+dogImage.src = "assets/shadow_dog.png";
 
-function Type(char) {
-    let line = textSpace[cursor.r];
-    textSpace[cursor.r] = line.slice(0, cursor.l) + char + line.slice(cursor.l);
-    cursor.l++;
+let frames = loadKeyframesFromTilemap(dogImage, 575, 523, 7, 0);
+let runAnim = new Animation2D(frames, 120, true);
+
+let player = new Sprite2D(new Vector2D(100, 100));
+player.add_animation("run", runAnim);
+player.play_animation("run");
+
+scene_main.add_sprite(player);
+
+screen.background = "white"
+
+new Camera2DController(scene_main, screen, true);
+
+function loop(deltaTime) {
+
 }
 
-function Remove() {
-    if (cursor.l > 0) {
-        let line = textSpace[cursor.r];
-        textSpace[cursor.r] = line.slice(0, cursor.l - 1) + line.slice(cursor.l);
-        cursor.l--;
-    } else if (cursor.r > 0) {
-        let prevLine = textSpace[cursor.r - 1];
-        let currentLine = textSpace[cursor.r];
-        cursor.l = prevLine.length;
-        textSpace[cursor.r - 1] = prevLine + currentLine;
-        textSpace.splice(cursor.r, 1);
-        cursor.r--;
-    }
+let lastTime = 0;
+function gameLoop(timestamp) {
+    let deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+
+    loop(deltaTime)
+
+    screen.render(deltaTime);
+    requestAnimationFrame(gameLoop);
 }
 
-function NewLine() {
-    let line = textSpace[cursor.r];
-    let newLine = line.slice(cursor.l);
-    textSpace[cursor.r] = line.slice(0, cursor.l);
-    textSpace.splice(cursor.r + 1, 0, newLine);
-    cursor.r++;
-    cursor.l = 0;
-}
 
-const input = document.getElementById('hiddenInput');
-input.focus(); // automaticky focus pro zachytávání kláves
-
-input.addEventListener('keydown', (e) => {
-    if (e.key === "Backspace") {
-        e.preventDefault();
-        Remove();
-    } else if (e.key === "Enter") {
-        e.preventDefault();
-        NewLine();
-    }
-});
-
-input.addEventListener('input', (e) => {
-    for (let char of e.target.value) {
-        Type(char);
-    }
-    e.target.value = '';
-});
-
-setInterval(() => {
-    if(cursor.ch=="_"){cursor.ch=""}else{cursor.ch="_"};
-}, 250);
-
-// --- render ---
-function render() {
-    input.focus();
-    screen.clear();
-    
-    textSpace.forEach((line, index) => {
-        let displayLine = line;
-        if (index === cursor.r) {
-            displayLine = line.slice(0, cursor.l) + cursor.ch + line.slice(cursor.l); // kurzor
-        }
-        screen.draw_string(5, 5 + index * 10, displayLine, 1, Color3(255, 255, 255));
-    });
-
-    requestAnimationFrame(render);
-}
-
-render();
-
-// --- myš ---
-let ll = 0, lx=0, ly=0, lx1=0, ly1=0;
-screen.canvas.addEventListener('mousemove', function(event) {
-    ll = !ll;
-    if (ll) {
-        lx = event.clientX;
-        ly = event.clientY;
-    } else {
-        lx1 = event.clientX;
-        ly1 = event.clientY;
-    }
-});
+requestAnimationFrame(gameLoop);
