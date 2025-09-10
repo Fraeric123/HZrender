@@ -1,1 +1,1 @@
-My simple lybrary for making 2D games
+My simple library for making 2D games
